@@ -263,8 +263,72 @@ export function DailyCheckInPage({
     };
   }, [dailyLogs.length, hevyWorkouts.length]);
 
-  // Sync form fields whenever selectedDate or saved entry changes
+  const hydratedDateRef = useRef<string | null>(null);
+  const lastSavedSnapshotRef = useRef<string>('');
+  const autoSaveTimerRef = useRef<number | null>(null);
+  const pendingAutoSaveRef = useRef<{
+    date: string;
+    entry: DailyBiometricLog;
+    snapshot: string;
+  } | null>(null);
+
+  function buildDraftEntryForDate(
+    targetDate: string,
+    baseExisting: DailyBiometricLog | null,
+    cleared: Set<string>,
+  ): DailyBiometricLog {
+    const trimmedNotes = notesStr.trim();
+    const draftEntry: DailyBiometricLog = {
+      date: targetDate,
+      weightKg: parseNumInput(weightStr),
+      sleepHours: parseNumInput(sleepHoursStr),
+      sleepQuality,
+      restingHr: parseNumInput(restingHrStr),
+      hrv: parseNumInput(hrvStr),
+      caloriesKcal: parseNumInput(caloriesStr),
+      proteinGrams: parseNumInput(proteinStr),
+      cardioDistanceKm: parseNumInput(cardioKmStr),
+      cardioDurationMinutes: parseNumInput(cardioMinStr),
+      cardioElevationGainM: parseNumInput(cardioElevationStr),
+      steps: parseNumInput(stepsStr),
+      activeCalories: parseNumInput(activeCaloriesStr),
+      restingCalories: parseNumInput(restingCaloriesStr),
+      completedHabits,
+      notes: trimmedNotes ? trimmedNotes : undefined,
+    };
+    return mergeUnifiedDailyLog(baseExisting, draftEntry, cleared);
+  }
+
+  // Sync form fields on date switch or external sync without overwriting active edits
   useEffect(() => {
+    const dateChanged = hydratedDateRef.current !== selectedDate;
+
+    if (dateChanged) {
+      if (autoSaveTimerRef.current !== null) {
+        window.clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      const pending = pendingAutoSaveRef.current;
+      if (pending) {
+        pendingAutoSaveRef.current = null;
+        void onSaveDailyLog(pending.entry);
+      }
+    } else {
+      if (existingEntry && JSON.stringify(existingEntry) === lastSavedSnapshotRef.current) {
+        return;
+      }
+      const currentSnapshot = JSON.stringify(
+        buildDraftEntryForDate(selectedDate, existingEntry, clearedFields),
+      );
+      if (
+        pendingAutoSaveRef.current !== null ||
+        (lastSavedSnapshotRef.current !== '' &&
+          currentSnapshot !== lastSavedSnapshotRef.current)
+      ) {
+        return;
+      }
+    }
+
     if (existingEntry) {
       setWeightStr(toInputStr(existingEntry.weightKg));
       setSleepHoursStr(toInputStr(existingEntry.sleepHours));
@@ -299,7 +363,145 @@ export function DailyCheckInPage({
       setNotesStr('');
     }
     setClearedFields(new Set());
+
+    const initialDraft: DailyBiometricLog = existingEntry
+      ? {
+          date: selectedDate,
+          weightKg: parseNumInput(toInputStr(existingEntry.weightKg)),
+          sleepHours: parseNumInput(toInputStr(existingEntry.sleepHours)),
+          sleepQuality: existingEntry.sleepQuality,
+          restingHr: parseNumInput(toInputStr(existingEntry.restingHr)),
+          hrv: parseNumInput(toInputStr(existingEntry.hrv)),
+          caloriesKcal: parseNumInput(toInputStr(existingEntry.caloriesKcal)),
+          proteinGrams: parseNumInput(toInputStr(existingEntry.proteinGrams)),
+          cardioDistanceKm: parseNumInput(toInputStr(existingEntry.cardioDistanceKm)),
+          cardioDurationMinutes: parseNumInput(toInputStr(existingEntry.cardioDurationMinutes)),
+          cardioElevationGainM: parseNumInput(toInputStr(existingEntry.cardioElevationGainM)),
+          steps: parseNumInput(toInputStr(existingEntry.steps)),
+          activeCalories: parseNumInput(toInputStr(existingEntry.activeCalories)),
+          restingCalories: parseNumInput(toInputStr(existingEntry.restingCalories)),
+          completedHabits: existingEntry.completedHabits,
+          notes: (existingEntry.notes ?? '').trim() || undefined,
+        }
+      : {
+          date: selectedDate,
+          completedHabits: [],
+        };
+    const initialMerged = mergeUnifiedDailyLog(existingEntry, initialDraft, new Set());
+    lastSavedSnapshotRef.current = JSON.stringify(initialMerged);
+    hydratedDateRef.current = selectedDate;
   }, [selectedDate, existingEntry]);
+
+  // Auto-save form and habit changes to disk (400ms debounce)
+  useEffect(() => {
+    if (hydratedDateRef.current !== selectedDate) return;
+
+    const mergedEntry = buildDraftEntryForDate(
+      selectedDate,
+      existingEntryRef.current,
+      clearedFields,
+    );
+    const snapshot = JSON.stringify(mergedEntry);
+    if (snapshot === lastSavedSnapshotRef.current) return;
+
+    pendingAutoSaveRef.current = {
+      date: selectedDate,
+      entry: mergedEntry,
+      snapshot,
+    };
+
+    if (autoSaveTimerRef.current !== null) {
+      window.clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = window.setTimeout(() => {
+      autoSaveTimerRef.current = null;
+      const pending = pendingAutoSaveRef.current;
+      if (!pending || pending.date !== selectedDate) return;
+      pendingAutoSaveRef.current = null;
+      lastSavedSnapshotRef.current = pending.snapshot;
+
+      void onSaveDailyLog(pending.entry)
+        .then(() => {
+          setClearedFields((prev) => (prev.size > 0 ? new Set() : prev));
+          if (isLocalServerHost()) {
+            fetch('/api/backup-status', { cache: 'no-store' })
+              .then((res) => (res.ok ? res.json() : null))
+              .then(
+                (
+                  data: {
+                    count?: number;
+                    limit?: number;
+                    latestDate?: string | null;
+                  } | null,
+                ) => {
+                  if (data && typeof data.count === 'number') {
+                    setBackupStatus({
+                      count: data.count,
+                      limit: typeof data.limit === 'number' ? data.limit : 10,
+                      latestDate:
+                        typeof data.latestDate === 'string' ? data.latestDate : null,
+                    });
+                  }
+                },
+              )
+              .catch(() => {});
+          }
+          const targetLabel = isLocalServerHost()
+            ? '\u0432 database.json'
+            : '\u043D\u0430 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u043E\u0442\u043E';
+          setFeedback({
+            type: 'success',
+            message: `\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u043D\u043E \u0437\u0430\u043F\u0430\u0437\u0435\u043D\u043E ${targetLabel}.`,
+          });
+        })
+        .catch(() => {
+          lastSavedSnapshotRef.current = '';
+        });
+    }, 400);
+
+    return () => {
+      if (autoSaveTimerRef.current !== null) {
+        window.clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [
+    selectedDate,
+    weightStr,
+    sleepHoursStr,
+    sleepQuality,
+    restingHrStr,
+    hrvStr,
+    caloriesStr,
+    proteinStr,
+    cardioKmStr,
+    cardioMinStr,
+    cardioElevationStr,
+    stepsStr,
+    activeCaloriesStr,
+    restingCaloriesStr,
+    completedHabits,
+    notesStr,
+    clearedFields,
+    onSaveDailyLog,
+  ]);
+
+  // Flush any pending auto-save immediately if user switches tabs/pages
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current !== null) {
+        window.clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      const pending = pendingAutoSaveRef.current;
+      if (pending) {
+        pendingAutoSaveRef.current = null;
+        lastSavedSnapshotRef.current = pending.snapshot;
+        void onSaveDailyLog(pending.entry);
+      }
+    };
+  }, [onSaveDailyLog]);
 
   // 0 ms неблокираща фонова синхронизация от Huawei Watch (Intervals.icu) за избраната дата
   useEffect(() => {
@@ -771,6 +973,11 @@ export function DailyCheckInPage({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (autoSaveTimerRef.current !== null) {
+      window.clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    pendingAutoSaveRef.current = null;
     setSaving(true);
     setFeedback(null);
 
@@ -802,6 +1009,7 @@ export function DailyCheckInPage({
 
     try {
       const wasExisting = Boolean(existingEntry);
+      lastSavedSnapshotRef.current = JSON.stringify(mergedEntry);
       await onSaveDailyLog(mergedEntry);
       setClearedFields(new Set());
       if (isLocalServerHost()) {
