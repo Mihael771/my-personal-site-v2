@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тракер за Мускулна Маса по Групи</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --card-inner: #0f172a;
+            --border: #334155;
+            --accent: #22c55e;
+            --accent-hover: #16a34a;
+            --danger: #ef4444;
+            --blue: #3b82f6;
+            --cyan: #38bdf8;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 30px 15px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 880px;
+            width: 100%;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        header h1 {
+            margin: 0 0 8px 0;
+            font-size: 1.9rem;
+        }
+        header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .type-badge {
+            align-self: center;
+            background: var(--card-inner);
+            color: var(--cyan);
+            font-family: Consolas, monospace;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+        .card-title {
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+        .value {
+            font-size: 2.1rem;
+            font-weight: 700;
+            margin: 12px 0;
+            color: var(--accent);
+        }
+        .subtext {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+        .panel {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .panel h3 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+        /* Секция за Мускулни Групи */
+        .muscle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+            margin-top: 14px;
+        }
+        .muscle-card {
+            background: var(--card-inner);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: border-color 0.2s;
+        }
+        .muscle-card.active-today {
+            border-color: var(--accent);
+        }
+        .muscle-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .muscle-name {
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+        .muscle-bool {
+            font-family: Consolas, monospace;
+            font-size: 0.75rem;
+            padding: 2px 7px;
+            border-radius: 5px;
+        }
+        .muscle-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 4px;
+        }
+        .muscle-grams {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--cyan);
+        }
+        .muscle-int {
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+        .progress-bar-bg {
+            width: 100%;
+            height: 7px;
+            background: #1e293b;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 4px 0;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--blue), var(--accent));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        /* Избор на чипове за мускулни групи */
+        .group-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .chip {
+            background: var(--card-inner);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 7px 13px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s;
+        }
+        .chip.selected {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: var(--accent);
+            color: var(--text);
+            font-weight: 600;
+        }
+        .legend {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 290px;
+            margin-top: 10px;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+        }
+        .chart-tooltip {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.96);
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            pointer-events: none;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+            z-index: 10;
+            white-space: nowrap;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            align-items: center;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 150px;
+            gap: 5px;
+        }
+        .form-group label {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+        input[type="number"], input[type="date"], select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: var(--text);
+            cursor: pointer;
+        }
+        .checkbox-row input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        button {
+            background-color: var(--accent);
+            color: #052e16;
+            font-weight: 700;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.92rem;
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        button.btn-blue {
+            background-color: var(--blue);
+            color: #fff;
+        }
+        button.btn-danger {
+            background-color: var(--danger);
+            color: #fff;
+        }
+        button.btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        button.btn-sm {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+        }
+        .table-wrapper {
+            max-height: 380px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            color: var(--muted);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            background: var(--card);
+        }
+        .status-badge {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+            user-select: none;
+        }
+        .status-true {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+        .status-false {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+        .mini-tag {
+            display: inline-block;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: var(--cyan);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            margin: 2px 3px 2px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Тракер за Мускулна Маса</h1>
+        <p>Автоматично дневно обновяване по мускулни групи на <code>bool</code>, <code>int</code> и <code>double</code></p>
+    </header>
+
+    <div class="grid">
+        <!-- DOUBLE -->
+        <div class="card">
+            <span class="type-badge">double (плаваща запетая)</span>
+            <div class="card-title">Общо качена мускулна маса</div>
+            <div class="value" id="valDouble">0.00 г</div>
+            <div class="subtext" id="valKg">0.000 кг (+0.0 г/ден)</div>
+        </div>
+
+        <!-- INTEGER -->
+        <div class="card">
+            <span class="type-badge">int (цяло число)</span>
+            <div class="card-title">Общо дни в режима</div>
+            <div class="value" id="valInt">1</div>
+            <div class="subtext" id="valDate">Днес: -</div>
+        </div>
+
+        <!-- BOOL -->
+        <div class="card">
+            <span class="type-badge">bool (булева стойност)</span>
+            <div class="card-title">Тренировка днес</div>
+            <div class="value" id="valBool">false</div>
+            <button id="btnToggleBool" onclick="toggleTodayWorkout()">Отбележи тренировка</button>
+        </div>
+    </div>
+
+    <!-- МУСКУЛНИ ГРУПИ -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Прогрес по мускулни групи (избери какво тренираш днес)</h3>
+        </div>
+        <div class="subtext">
+            Кликни върху бутона на мускулна група, за да я отбележиш като тренирана днес (<code>bool = true</code>). Дневните грамове се разпределят между тренираните групи за деня:
+        </div>
+        <div class="muscle-grid" id="muscleGroupsGrid"></div>
+    </div>
+
+    <!-- ВИЗУАЛНА ГРАФИКА С CANVAS -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Графика на растежа по дни</h3>
+            <div class="legend">
+                <select id="chartFilterSelect" onchange="renderUI(loadDB())" style="width: auto; padding: 6px 10px; font-size: 0.85rem;">
+                    <option value="all">Всички групи (Общо)</option>
+                    <option value="chest">Само: Гърди</option>
+                    <option value="back">Само: Гръб</option>
+                    <option value="legs">Само: Крака</option>
+                    <option value="shoulders">Само: Рамене</option>
+                    <option value="arms">Само: Ръце</option>
+                    <option value="core">Само: Корем</option>
+                </select>
+                <span class="legend-item"><span class="dot" style="background: #22c55e;"></span> Тренирал (true)</span>
+                <span class="legend-item"><span class="dot" style="background: #ef4444;"></span> Почивка (false)</span>
+            </div>
+        </div>
+        <div class="subtext">Посочи точка от линията с мишката за детайли за деня и тренираните мускулни групи:</div>
+        <div class="chart-container">
+            <canvas id="progressCanvas"></canvas>
+            <div id="chartTooltip" class="chart-tooltip"></div>
+        </div>
+    </div>
+
+    <!-- ДОБАВЯНЕ НА МИНАЛИ ДНИ -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Добави или редактирай минал ден</h3>
+        </div>
+        <div class="subtext">Избери минала дата, грамаж и кои мускулни групи си тренирал тогава:</div>
+        
+        <div class="row" style="margin-top: 14px;">
+            <div class="form-group">
+                <label>Дата:</label>
+                <input type="date" id="pastDateInput" onchange="onPastDateChange()">
+            </div>
+            <div class="form-group">
+                <label>Качени грамове (double):</label>
+                <input type="number" id="pastGramsInput" step="0.1" placeholder="напр. 15.5">
+            </div>
+            <div class="form-group">
+                <label>Тренировка (bool):</label>
+                <select id="pastBoolInput">
+                    <option value="true">true (Тренирал)</option>
+                    <option value="false">false (Почивка)</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+            <label style="font-size: 0.82rem; color: var(--muted);">Тренирани мускулни групи за избраната дата:</label>
+            <div class="group-chips" id="pastGroupChips"></div>
+        </div>
+
+        <label class="checkbox-row">
+            <input type="checkbox" id="fillRangeCheckbox">
+            Попълни автоматично и всички празни дни от тази дата до днес
+        </label>
+
+        <div class="row" style="margin-top: 14px;">
+            <button onclick="addOrUpdatePastDay()">Запази в базата данни</button>
+        </div>
+    </div>
+
+    <!-- НАСТРОЙКИ И АВТОМАТИЧЕН ПРИРАСТ -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Настройки на автоматичния дневен прираст</h3>
+        </div>
+        <div class="subtext">Колко грама мускулна маса (<code>double</code>) да се начисляват автоматично всеки нов ден:</div>
+        <div class="row">
+            <input type="number" id="inputDailyRate" step="0.1" placeholder="напр. 15.5">
+            <button onclick="updateDailyRate()">Запази дневния грамаж</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border); margin: 18px 0;">
+
+        <div class="subtext">Инструменти за тестване и управление на базата:</div>
+        <div class="row">
+            <button class="btn-blue" onclick="simulateNextDay()">+1 Ден (Симулирай утрешния ден)</button>
+            <button class="btn-outline" onclick="exportDatabase()">Изтегли базата (.json)</button>
+            <button class="btn-danger" onclick="resetDatabase()">Нулирай всичко</button>
+        </div>
+    </div>
+
+    <!-- ИСТОРИЯ В БАЗАТА ДАННИ -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Всички записи в базата данни (кликни на ред, за да го заредиш за редакция)</h3>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ден (int)</th>
+                        <th>Дата</th>
+                        <th>Тренирал (bool)</th>
+                        <th>Мускулни групи</th>
+                        <th>За деня (double)</th>
+                        <th>Общо (double)</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DB_KEY = 'MuscleTrackerDB_v2';
+
+    const MUSCLE_GROUPS = [
+        { id: 'chest', name: 'Гърди' },
+        { id: 'back', name: 'Гръб' },
+        { id: 'legs', name: 'Крака' },
+        { id: 'shoulders', name: 'Рамене' },
+        { id: 'arms', name: 'Ръце' },
+        { id: 'core', name: 'Корем' }
+    ];
+
+    let currentChartPoints = [];
+    let selectedPastGroups = new Set();
+
+    function getTodayString() {
+        return formatDate(new Date());
+    }
+
+    function formatDate(dateObj) {
+        return dateObj.getFullYear() + '-' +
+               String(dateObj.getMonth() + 1).padStart(2, '0') + '-' +
+               String(dateObj.getDate()).padStart(2, '0');
+    }
+
+    function getDefaultDatabase() {
+        const today = getTodayString();
+        return {
+            dailyGainRateGrams: 15.5,
+            lastAutoCheckDate: today,
+            entries: [
+                {
+                    date: today,
+                    trained: false,
+                    gainedGrams: 15.5,
+                    groups: []
+                }
+            ]
+        };
+    }
+
+    function loadDB() {
+        const raw = localStorage.getItem(DB_KEY);
+        if (!raw) {
+            const initial = getDefaultDatabase();
+            saveDB(initial);
+            return initial;
+        }
+        const db = JSON.parse(raw);
+        // Миграция на стари записи, ако нямат масив groups
+        db.entries.forEach(e => {
+            if (!Array.isArray(e.groups)) {
+                e.groups = [];
+            }
+        });
+        return db;
+    }
+
+    function saveDB(db) {
+        db.entries.sort((a, b) => a.date.localeCompare(b.date));
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        renderUI(db);
+    }
+
+    function checkAndApplyDailyUpdate() {
+        const db = loadDB();
+        const today = getTodayString();
+
+        if (db.entries.length === 0) {
+            db.entries.push({
+                date: today,
+                trained: false,
+                gainedGrams: parseFloat(db.dailyGainRateGrams),
+                groups: []
+            });
+            saveDB(db);
+            return;
+        }
+
+        db.entries.sort((a, b) => a.date.localeCompare(b.date));
+        const latestEntryDateStr = db.entries[db.entries.length - 1].date;
+
+        if (latestEntryDateStr < today) {
+            let curr = new Date(latestEntryDateStr + 'T00:00:00');
+            const end = new Date(today + 'T00:00:00');
+
+            while (curr < end) {
+                curr.setDate(curr.getDate() + 1);
+                const dateStr = formatDate(curr);
+                if (!db.entries.some(e => e.date === dateStr)) {
+                    db.entries.push({
+                        date: dateStr,
+                        trained: Boolean(false),
+                        gainedGrams: parseFloat(db.dailyGainRateGrams),
+                        groups: []
+                    });
+                }
+            }
+            db.lastAutoCheckDate = today;
+            saveDB(db);
+        } else {
+            renderUI(db);
+        }
+    }
+
+    // Връща текущия (днешния или последния симулиран) запис
+    function getCurrentEntry(db) {
+        const today = getTodayString();
+        let entry = db.entries.find(e => e.date === today);
+        if (!entry && db.entries.length > 0) {
+            entry = db.entries[db.entries.length - 1];
+        }
+        return entry;
+    }
+
+    // Превключване на конкретна мускулна група за днес
+    function toggleTodayMuscleGroup(groupId) {
+        const db = loadDB();
+        const entry = getCurrentEntry(db);
+        if (!entry) return;
+
+        if (!Array.isArray(entry.groups)) entry.groups = [];
+        const idx = entry.groups.indexOf(groupId);
+
+        if (idx === -1) {
+            entry.groups.push(groupId);
+            entry.trained = true; // Автоматично правим bool = true
+        } else {
+            entry.groups.splice(idx, 1);
+            if (entry.groups.length === 0) {
+                entry.trained = false;
+            }
+        }
+        saveDB(db);
+    }
+
+    // Общ бутон за тренировка днес
+    function toggleTodayWorkout() {
+        const db = loadDB();
+        const entry = getCurrentEntry(db);
+        if (!entry) return;
+
+        entry.trained = !Boolean(entry.trained);
+        if (!entry.trained) {
+            entry.groups = [];
+        }
+        saveDB(db);
+    }
+
+    // Инициализиране на чиповете за избор на мускулни групи при минали дни
+    function renderPastGroupChips() {
+        const container = document.getElementById('pastGroupChips');
+        container.innerHTML = '';
+        MUSCLE_GROUPS.forEach(g => {
+            const span = document.createElement('span');
+            span.className = 'chip' + (selectedPastGroups.has(g.id) ? ' selected' : '');
+            span.innerText = g.name;
+            span.onclick = () => {
+                if (selectedPastGroups.has(g.id)) {
+                    selectedPastGroups.delete(g.id);
+                } else {
+                    selectedPastGroups.add(g.id);
+                    document.getElementById('pastBoolInput').value = 'true';
+                }
+                renderPastGroupChips();
+            };
+            container.appendChild(span);
+        });
+    }
+
+    // Когато потребителят избере дата от календара, зареждаме нейните данни ако вече съществуват
+    function onPastDateChange() {
+        const dateVal = document.getElementById('pastDateInput').value;
+        const db = loadDB();
+        const existing = db.entries.find(e => e.date === dateVal);
+        if (existing) {
+            document.getElementById('pastGramsInput').value = existing.gainedGrams;
+            document.getElementById('pastBoolInput').value = existing.trained ? 'true' : 'false';
+            selectedPastGroups = new Set(existing.groups || []);
+            renderPastGroupChips();
+        }
+    }
+
+    function addOrUpdatePastDay() {
+        const dateVal = document.getElementById('pastDateInput').value;
+        const gramsVal = parseFloat(document.getElementById('pastGramsInput').value);
+        let boolVal = document.getElementById('pastBoolInput').value === 'true';
+        const fillRange = document.getElementById('fillRangeCheckbox').checked;
+
+        if (!dateVal) {
+            alert('Моля, избери дата от календара!');
+            return;
+        }
+        if (isNaN(gramsVal) || gramsVal < 0) {
+            alert('Моля, въведи валиден грамаж (double)!');
+            return;
+        }
+
+        const chosenGroups = Array.from(selectedPastGroups);
+        if (chosenGroups.length > 0) {
+            boolVal = true;
+        }
+
+        const db = loadDB();
+        const roundedGrams = parseFloat(gramsVal.toFixed(2));
+
+        const existingIndex = db.entries.findIndex(e => e.date === dateVal);
+        if (existingIndex !== -1) {
+            db.entries[existingIndex].gainedGrams = roundedGrams;
+            db.entries[existingIndex].trained = Boolean(boolVal);
+            db.entries[existingIndex].groups = chosenGroups;
+        } else {
+            db.entries.push({
+                date: dateVal,
+                trained: Boolean(boolVal),
+                gainedGrams: roundedGrams,
+                groups: chosenGroups
+            });
+        }
+
+        if (fillRange) {
+            let curr = new Date(dateVal + 'T00:00:00');
+            const today = new Date(getTodayString() + 'T00:00:00');
+
+            while (curr < today) {
+                curr.setDate(curr.getDate() + 1);
+                const dStr = formatDate(curr);
+                if (!db.entries.some(e => e.date === dStr)) {
+                    db.entries.push({
+                        date: dStr,
+                        trained: Boolean(boolVal),
+                        gainedGrams: roundedGrams,
+                        groups: [...chosenGroups]
+                    });
+                }
+            }
+        }
+
+        saveDB(db);
+    }
+
+    function toggleWorkoutByDate(dateStr) {
+        const db = loadDB();
+        const entry = db.entries.find(e => e.date === dateStr);
+        if (entry) {
+            entry.trained = !Boolean(entry.trained);
+            if (!entry.trained) entry.groups = [];
+            saveDB(db);
+        }
+    }
+
+    function loadDateIntoEditor(dateStr) {
+        document.getElementById('pastDateInput').value = dateStr;
+        onPastDateChange();
+        document.getElementById('pastDateInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function deleteEntryByDate(dateStr) {
+        const db = loadDB();
+        if (db.entries.length <= 1) {
+            alert('Базата трябва да съдържа поне 1 ден!');
+            return;
+        }
+        db.entries = db.entries.filter(e => e.date !== dateStr);
+        saveDB(db);
+    }
+
+    function updateDailyRate() {
+        const inputVal = parseFloat(document.getElementById('inputDailyRate').value);
+        if (isNaN(inputVal) || inputVal < 0) {
+            alert('Моля, въведи валидно число (double)!');
+            return;
+        }
+        const db = loadDB();
+        db.dailyGainRateGrams = parseFloat(inputVal.toFixed(2));
+
+        const latest = db.entries[db.entries.length - 1];
+        if (latest) {
+            latest.gainedGrams = db.dailyGainRateGrams;
+        }
+        saveDB(db);
+    }
+
+    function simulateNextDay() {
+        const db = loadDB();
+        db.entries.sort((a, b) => a.date.localeCompare(b.date));
+        const lastDateStr = db.entries[db.entries.length - 1].date;
+        const nextDate = new Date(lastDateStr + 'T00:00:00');
+        nextDate.setDate(nextDate.getDate() + 1);
+
+        db.entries.push({
+            date: formatDate(nextDate),
+            trained: Boolean(false),
+            gainedGrams: parseFloat(db.dailyGainRateGrams),
+            groups: []
+        });
+
+        saveDB(db);
+    }
+
+    function exportDatabase() {
+        const db = loadDB();
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "muscle_database.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function resetDatabase() {
+        if (confirm('Сигурен ли си, че искаш да изтриеш всички дни от базата данни?')) {
+            localStorage.removeItem(DB_KEY);
+            selectedPastGroups.clear();
+            checkAndApplyDailyUpdate();
+        }
+    }
+
+    // --- РИСУВАНЕ НА CANVAS ГРАФИКАТА ---
+    function drawChart(rows, filterKey) {
+        const canvas = document.getElementById('progressCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+
+        const width = rect.width;
+        const height = rect.height;
+        const padLeft = 58;
+        const padRight = 24;
+        const padTop = 20;
+        const padBottom = 38;
+
+        const plotWidth = width - padLeft - padRight;
+        const plotHeight = height - padTop - padBottom;
+
+        ctx.clearRect(0, 0, width, height);
+        if (rows.length === 0) return;
+
+        const getValue = (r) => filterKey === 'all' ? r.cumulativeGrams : (r.groupCumulative[filterKey] || 0);
+
+        const maxVal = Math.max(...rows.map(getValue), 5);
+        const minVal = 0;
+
+        const gridSteps = 4;
+        ctx.font = '12px Segoe UI, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+
+        for (let i = 0; i <= gridSteps; i++) {
+            const ratio = i / gridSteps;
+            const y = padTop + plotHeight - (ratio * plotHeight);
+            const val = (minVal + ratio * (maxVal - minVal)).toFixed(1);
+
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padLeft, y);
+            ctx.lineTo(width - padRight, y);
+            ctx.stroke();
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText(val + ' г', padLeft - 8, y);
+        }
+
+        currentChartPoints = rows.map((r, idx) => {
+            const val = getValue(r);
+            const xRatio = rows.length === 1 ? 0.5 : idx / (rows.length - 1);
+            const yRatio = (val - minVal) / (maxVal - minVal || 1);
+            const isHighlighted = filterKey === 'all' ? r.trained : r.groups.includes(filterKey);
+            return {
+                x: padLeft + xRatio * plotWidth,
+                y: padTop + plotHeight - (yRatio * plotHeight),
+                displayVal: val,
+                isHighlighted: isHighlighted,
+                data: r
+            };
+        });
+
+        if (currentChartPoints.length > 1) {
+            const grad = ctx.createLinearGradient(0, padTop, 0, padTop + plotHeight);
+            grad.addColorStop(0, 'rgba(56, 189, 248, 0.30)');
+            grad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+            ctx.beginPath();
+            ctx.moveTo(currentChartPoints[0].x, padTop + plotHeight);
+            currentChartPoints.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(currentChartPoints[currentChartPoints.length - 1].x, padTop + plotHeight);
+            ctx.closePath();
+            ctx.fillStyle = grad;
+            ctx.fill();
+        }
+
+        ctx.beginPath();
+        currentChartPoints.forEach((p, idx) => {
+            if (idx === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+        });
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const labelStep = Math.max(1, Math.ceil(currentChartPoints.length / 6));
+
+        currentChartPoints.forEach((p, idx) => {
+            if (idx % labelStep === 0 || idx === currentChartPoints.length - 1) {
+                const shortDate = p.data.date.slice(5);
+                ctx.fillText(`Ден ${p.data.dayNumber} (${shortDate})`, p.x, padTop + plotHeight + 10);
+            }
+        });
+
+        const pointRadius = currentChartPoints.length > 40 ? 3.5 : 5.5;
+        currentChartPoints.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, pointRadius, 0, Math.PI * 2);
+            ctx.fillStyle = p.isHighlighted ? '#22c55e' : '#ef4444';
+            ctx.fill();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#0f172a';
+            ctx.stroke();
+        });
+    }
+
+    function setupCanvasHover() {
+        const canvas = document.getElementById('progressCanvas');
+        const tooltip = document.getElementById('chartTooltip');
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (currentChartPoints.length === 0) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            let closest = null;
+            let minDist = Infinity;
+
+            currentChartPoints.forEach(p => {
+                const dist = Math.hypot(p.x - mouseX, p.y - mouseY);
+                if (dist < minDist && dist < 35) {
+                    minDist = dist;
+                    closest = p;
+                }
+            });
+
+            if (closest) {
+                const d = closest.data;
+                const boolColor = d.trained ? '#22c55e' : '#ef4444';
+                const groupNames = d.groups.length > 0
+                    ? d.groups.map(id => MUSCLE_GROUPS.find(g => g.id === id)?.name || id).join(', ')
+                    : 'Общо възстановяване';
+
+                tooltip.style.display = 'block';
+                tooltip.innerHTML = `
+                    <div style="font-weight:bold; margin-bottom:4px; color:#38bdf8;">
+                        Ден #${d.dayNumber} (int) — ${d.date}
+                    </div>
+                    <div>Показана стойност (double): <strong>${closest.displayVal.toFixed(2)} г</strong></div>
+                    <div>Прираст за деня: +${d.gainedGrams.toFixed(2)} г</div>
+                    <div>Тренирал (bool): <span style="color:${boolColor}; font-weight:bold;">${d.trained}</span></div>
+                    <div>Мускулни групи: <span style="color:#cbd5e1;">${groupNames}</span></div>
+                `;
+
+                let leftPos = closest.x + 12;
+                if (leftPos + 230 > rect.width) {
+                    leftPos = closest.x - 235;
+                }
+                let topPos = closest.y - 50;
+                if (topPos < 5) topPos = 5;
+
+                tooltip.style.left = leftPos + 'px';
+                tooltip.style.top = topPos + 'px';
+            } else {
+                tooltip.style.display = 'none';
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+        });
+    }
+
+    function renderUI(db) {
+        db.entries.sort((a, b) => a.date.localeCompare(b.date));
+
+        const totalDaysInt = parseInt(db.entries.length, 10);
+
+        // Инициализиране на сумите по мускулни групи (double за грамове, int за брой тренировки)
+        const groupStats = {};
+        MUSCLE_GROUPS.forEach(g => {
+            groupStats[g.id] = {
+                gramsDouble: 0.0,
+                workoutsInt: 0
+            };
+        });
+
+        let cumulativeDouble = 0.0;
+        const rowsWithCumulative = db.entries.map((entry, index) => {
+            const dayGrams = parseFloat(entry.gainedGrams) || 0.0;
+            cumulativeDouble = parseFloat((cumulativeDouble + dayGrams).toFixed(2));
+            const activeGroups = Array.isArray(entry.groups) ? entry.groups : [];
+
+            if (activeGroups.length > 0) {
+                // Разпределяме дневния грамаж между тренираните мускулни групи за деня
+                const share = dayGrams / activeGroups.length;
+                activeGroups.forEach(gId => {
+                    if (groupStats[gId]) {
+                        groupStats[gId].gramsDouble += share;
+                        groupStats[gId].workoutsInt += 1;
+                    }
+                });
+            } else {
+                // Ако е почивен ден или няма избрана конкретна група, разпределяме базово между всички 6 групи
+                const evenShare = dayGrams / MUSCLE_GROUPS.length;
+                MUSCLE_GROUPS.forEach(g => {
+                    groupStats[g.id].gramsDouble += evenShare;
+                });
+            }
+
+            // Копие на текущите натрупани грамове по групи за графиката
+            const snapshot = {};
+            MUSCLE_GROUPS.forEach(g => {
+                snapshot[g.id] = parseFloat(groupStats[g.id].gramsDouble.toFixed(2));
+            });
+
+            return {
+                dayNumber: index + 1,
+                date: entry.date,
+                trained: Boolean(entry.trained),
+                groups: activeGroups,
+                gainedGrams: dayGrams,
+                cumulativeGrams: cumulativeDouble,
+                groupCumulative: snapshot
+            };
+        });
+
+        const currentEntry = getCurrentEntry(db);
+        const isTrainedTodayBool = currentEntry ? Boolean(currentEntry.trained) : false;
+        const todayGroups = currentEntry && Array.isArray(currentEntry.groups) ? currentEntry.groups : [];
+
+        // Основни 3 карти
+        document.getElementById('valDouble').innerText = cumulativeDouble.toFixed(2) + ' г';
+        const kg = (cumulativeDouble / 1000).toFixed(3);
+        document.getElementById('valKg').innerText = `${kg} кг (темп: +${db.dailyGainRateGrams.toFixed(1)} г/ден)`;
+
+        document.getElementById('valInt').innerText = totalDaysInt;
+        document.getElementById('valDate').innerText = 'Последен запис: ' + (currentEntry ? currentEntry.date : '-');
+
+        const boolEl = document.getElementById('valBool');
+        const btnEl = document.getElementById('btnToggleBool');
+        boolEl.innerText = isTrainedTodayBool ? 'true (Да)' : 'false (Не)';
+        boolEl.style.color = isTrainedTodayBool ? '#22c55e' : '#ef4444';
+        btnEl.innerText = isTrainedTodayBool ? 'Отмени за днес' : 'Отбележи тренировка';
+
+        // Рендиране на 6-те мускулни групи
+        const mgGrid = document.getElementById('muscleGroupsGrid');
+        mgGrid.innerHTML = '';
+
+        MUSCLE_GROUPS.forEach(g => {
+            const stat = groupStats[g.id];
+            const isTrainedToday = todayGroups.includes(g.id);
+            const percent = cumulativeDouble > 0 ? Math.min(100, (stat.gramsDouble / cumulativeDouble) * 100) : 0;
+
+            const card = document.createElement('div');
+            card.className = 'muscle-card' + (isTrainedToday ? ' active-today' : '');
+            card.innerHTML = `
+                <div class="muscle-card-top">
+                    <span class="muscle-name">${g.name}</span>
+                    <span class="muscle-bool ${isTrainedToday ? 'status-true' : 'status-false'}">
+                        bool: ${isTrainedToday}
+                    </span>
+                </div>
+                <div class="muscle-stats">
+                    <span class="muscle-grams" title="double">${stat.gramsDouble.toFixed(2)} г</span>
+                    <span class="muscle-int" title="int">Тренировки (int): <strong>${stat.workoutsInt}</strong></span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width: ${percent.toFixed(1)}%;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                    <span class="subtext">${percent.toFixed(1)}% от общия мускул</span>
+                    <button class="${isTrainedToday ? 'btn-outline' : ''} btn-sm" onclick="toggleTodayMuscleGroup('${g.id}')">
+                        ${isTrainedToday ? 'Премахни днес' : '+ Тренирах днес'}
+                    </button>
+                </div>
+            `;
+            mgGrid.appendChild(card);
+        });
+
+        // Полета за настройки
+        document.getElementById('inputDailyRate').value = db.dailyGainRateGrams;
+        if (!document.getElementById('pastGramsInput').value) {
+            document.getElementById('pastGramsInput').value = db.dailyGainRateGrams;
+        }
+        if (!document.getElementById('pastDateInput').value) {
+            document.getElementById('pastDateInput').value = getTodayString();
+        }
+        renderPastGroupChips();
+
+        // Рисуване на графиката спрямо избрания филтър
+        const filterKey = document.getElementById('chartFilterSelect').value || 'all';
+        drawChart(rowsWithCumulative, filterKey);
+
+        // Обновяване на таблицата с история
+        const tbody = document.getElementById('historyBody');
+        tbody.innerHTML = '';
+
+        rowsWithCumulative.slice().reverse().forEach(row => {
+            const tr = document.createElement('tr');
+            const groupBadges = row.groups.length > 0
+                ? row.groups.map(id => `<span class="mini-tag">${MUSCLE_GROUPS.find(m => m.id === id)?.name || id}</span>`).join('')
+                : `<span class="subtext">Базово (всички)</span>`;
+
+            tr.innerHTML = `
+                <td><strong>#${row.dayNumber}</strong></td>
+                <td style="cursor:pointer; text-decoration:underline;" onclick="loadDateIntoEditor('${row.date}')" title="Кликни за редакция на този ден">${row.date}</td>
+                <td>
+                    <span class="status-badge ${row.trained ? 'status-true' : 'status-false'}" 
+                          onclick="toggleWorkoutByDate('${row.date}')" 
+                          title="Кликни за промяна на булевата стойност">
+                        ${row.trained}
+                    </span>
+                </td>
+                <td>${groupBadges}</td>
+                <td>+${row.gainedGrams.toFixed(2)} г</td>
+                <td><strong>${row.cumulativeGrams.toFixed(2)} г</strong></td>
+                <td>
+                    <button class="btn-outline btn-sm" onclick="loadDateIntoEditor('${row.date}')">Редактирай</button>
+                    <button class="btn-danger btn-sm" onclick="deleteEntryByDate('${row.date}')">Изтрий</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    window.addEventListener('resize', () => {
+        const db = loadDB();
+        renderUI(db);
+    });
+
+    setupCanvasHover();
+    checkAndApplyDailyUpdate();
+    setInterval(checkAndApplyDailyUpdate, 60000);
+</script>
+
+</body>
+</html>
